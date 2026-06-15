@@ -1,14 +1,21 @@
 import os
 import tempfile
 import PyPDF2
-import streamlit as st
-from streamlit.runtime import exists as _st_exists
+try:
+    import streamlit as _original_st
+    from streamlit.runtime import exists as _st_exists
+    has_streamlit = True
+except ImportError:
+    _original_st = None
+    has_streamlit = False
+    def _st_exists():
+        return False
 
 class SafeStreamlitMock:
     def __init__(self, original_st):
         self._st = original_st
     def __getattr__(self, name):
-        if _st_exists():
+        if _st_exists() and self._st:
             return getattr(self._st, name)
         if name in ['info', 'success', 'warning', 'error', 'write', 'markdown', 'title', 'header', 'subheader', 'caption']:
             return lambda msg, *args, **kwargs: print(f"[{name.upper()}] {msg}")
@@ -50,10 +57,10 @@ class SafeStreamlitMock:
                 def __setattr__(self, item, value): self[item] = value
             return SessionStateMock()
         elif name == 'sidebar':
-            return SafeStreamlitMock(getattr(self._st, 'sidebar') if self._st else None)
+            return SafeStreamlitMock(getattr(self._st, 'sidebar') if (self._st and hasattr(self._st, 'sidebar')) else None)
         return lambda *args, **kwargs: None
 
-st = SafeStreamlitMock(st)
+st = SafeStreamlitMock(_original_st)
 import torch
 import requests
 from bs4 import BeautifulSoup
