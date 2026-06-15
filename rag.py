@@ -172,13 +172,8 @@ class EnhancedRAG:
             print(f"Failed to load Groq Vision LLM: {str(e)}")
             self.vision_llm = None
         
-        # Initialize CrossEncoder for Re-ranking
-        try:
-            self.reranker = ModelCache.get_reranker("cross-encoder/ms-marco-MiniLM-L-6-v2", self.device)
-            print("Loaded local Cross-Encoder re-ranker successfully.")
-        except Exception as e:
-            print(f"Failed to load Cross-Encoder reranker: {str(e)}")
-            self.reranker = None
+        # Reranker is initialized lazily when needed
+        self.reranker = None
         
         self.doc_vector_store = None
         self.web_vector_store = None
@@ -338,6 +333,12 @@ class EnhancedRAG:
         if not documents:
             return []
         if not hasattr(self, 'reranker') or self.reranker is None:
+            try:
+                self.reranker = ModelCache.get_reranker("cross-encoder/ms-marco-MiniLM-L-6-v2", self.device)
+            except Exception as e:
+                print(f"Failed to load Cross-Encoder reranker on demand: {str(e)}")
+                self.reranker = None
+        if self.reranker is None:
             return documents[:top_k]
         
         try:
@@ -559,6 +560,8 @@ class EnhancedRAG:
                 if not domains and len(self.documents) > 0:
                     domains = self.detect_domains(self.documents)
 
+                import gc
+                gc.collect()
                 return True
 
             except Exception as e:
@@ -567,6 +570,8 @@ class EnhancedRAG:
                 st.error(error_msg)
                 if is_nested:
                     status_msg.error(error_msg)
+                import gc
+                gc.collect()
                 return False
         else:
             empty_msg = "No content extracted from files"
@@ -574,6 +579,8 @@ class EnhancedRAG:
                 status_msg.error(empty_msg)
             else:
                 status_msg.error(empty_msg)
+            import gc
+            gc.collect()
             return False
          
     def detect_domains(self, documents, max_domains=3):
