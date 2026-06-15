@@ -1,0 +1,23 @@
+supabase
+bcrypt
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers
+langchain
+langchain-huggingface
+langchain-groq
+langchain-community
+faiss-cpu
+python-docx
+pymupdf
+SpeechRecognition
+pyaudio
+beautifulsoup4
+plotly
+pandas
+psutil
+requests
+python-dotenv
+fastapi
+uvicorn
+python-multipart

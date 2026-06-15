@@ -1,0 +1,41 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ─── Virtual Environment ──────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+.env.local
+
+# ─── Environment Variables (secrets) ─────────────────────────────────────────
+.env
+
+# ─── Scratch / temp files ─────────────────────────────────────────────────────
+scratch/
+*.log
+*.tmp
+
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background: indigo to cyan gradient -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- Chat bubble with bottom-left tail -->
+  <path d="M16 7 H48 Q58 7 58 16 V37 Q58 46 48 46 H24 L8 58 L14 46 Q6 46 6 37 V16 Q6 7 16 7Z"
+    fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="2.2" stroke-linejoin="round"/>
+
+  <!-- Document page inside bubble (left side) -->
+  <rect x="11" y="13" width="21" height="26" rx="3" fill="white" opacity="0.95"/>
+  <!-- Dog-ear fold at top-right of doc -->
+  <path d="M26 13 L32 13 L32 19Z" fill="#a5b4fc" opacity="0.9"/>
+  <!-- Document text lines -->
+  <line x1="14" y1="22" x2="28" y2="22" stroke="#6366f1" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="14" y1="27" x2="26" y2="27" stroke="#6366f1" stroke-width="1.4" stroke-linecap="round"/>
+  <line x1="14" y1="32" x2="24" y2="32" stroke="#6366f1" stroke-width="1.4" stroke-linecap="round"/>
+
+  <!-- Chat / answer text lines on right side of bubble -->
+  <line x1="36" y1="18" x2="52" y2="18" stroke="white" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
+  <line x1="36" y1="24" x2="50" y2="24" stroke="white" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
+  <line x1="36" y1="30" x2="52" y2="30" stroke="white" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
+  <line x1="36" y1="36" x2="46" y2="36" stroke="white" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+</svg>
