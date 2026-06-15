@@ -10,8 +10,7 @@ langchain-community
 faiss-cpu
 python-docx
 pymupdf
-SpeechRecognition
-pyaudio
+
 beautifulsoup4
 plotly
 pandas
