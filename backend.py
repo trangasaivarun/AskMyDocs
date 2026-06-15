@@ -706,88 +706,97 @@ async def delete_document(file_id: str, background_tasks: BackgroundTasks, curre
 @app.post("/api/chat")
 async def chat(request: ChatRequest, current_user = Depends(get_current_user)):
     user_id = current_user["user_id"]
-    
-    # Initialize RAG System
-    rag = EnhancedRAG(
-        llm_model_name=request.llm_model,
-        embedding_model_name=request.embedding_model,
-        chunk_size=request.chunk_size,
-        chunk_overlap=request.chunk_overlap,
-        use_gpu=request.use_gpu
-    )
-    
-    resolved_id = get_or_create_global_notebook(user_id) if (not request.notebook_id or request.notebook_id == "global") else request.notebook_id
-    
-    # Load index if notebook specified
-    if resolved_id:
-        success = rag.load_vector_store(db, resolved_id)
-        if not success:
-            # Return warning if RAG selected but no vectors found
-            if request.mode != "hybrid":
-                return {
-                    "answer": "This notebook has no processed document index yet. Please upload files and ensure 'Process with RAG' is enabled.",
-                    "sources": [],
-                    "query_time": 0.0,
-                    "mode": request.mode
-                }
+    try:
+        # Initialize RAG System
+        rag = EnhancedRAG(
+            llm_model_name=request.llm_model,
+            embedding_model_name=request.embedding_model,
+            chunk_size=request.chunk_size,
+            chunk_overlap=request.chunk_overlap,
+            use_gpu=request.use_gpu
+        )
+        
+        resolved_id = get_or_create_global_notebook(user_id) if (not request.notebook_id or request.notebook_id == "global") else request.notebook_id
+        
+        # Load index if notebook specified
+        if resolved_id:
+            success = rag.load_vector_store(db, resolved_id)
+            if not success:
+                # Return warning if RAG selected but no vectors found
+                if request.mode != "hybrid":
+                    return {
+                        "answer": "This notebook has no processed document index yet. Please upload files and ensure 'Process with RAG' is enabled.",
+                        "sources": [],
+                        "query_time": 0.0,
+                        "mode": request.mode
+                    }
+                    
+        import re
+        # Check if original query requested paragraph form
+        is_para_original = bool(re.search(r'\b(paras?|paragraphs?)\b', request.query.lower()))
+
+        standalone_query = request.query
+        if request.history:
+            try:
+                chat_history_str = ""
+                for msg in request.history:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    if isinstance(content, dict):
+                        content = content.get("answer", "")
+                    chat_history_str += f"{role.capitalize()}: {content}\n"
+                    
+                rephrase_prompt = f"""
+                Given the following conversation history and the latest user query, rephrase the latest query to be a standalone, self-contained question that retains all necessary context from the conversation history. This standalone query will be used for a database search, so make sure it contains the key search terms.
+                Do NOT answer the question. Do NOT add any preamble. Just output the standalone, rephrased query and nothing else.
                 
-    import re
-    # Check if original query requested paragraph form
-    is_para_original = bool(re.search(r'\b(paras?|paragraphs?)\b', request.query.lower()))
-
-    standalone_query = request.query
-    if request.history:
-        try:
-            chat_history_str = ""
-            for msg in request.history:
-                role = msg.get("role", "user")
-                content = msg.get("content", "")
-                if isinstance(content, dict):
-                    content = content.get("answer", "")
-                chat_history_str += f"{role.capitalize()}: {content}\n"
+                Conversation History:
+                {chat_history_str}
                 
-            rephrase_prompt = f"""
-            Given the following conversation history and the latest user query, rephrase the latest query to be a standalone, self-contained question that retains all necessary context from the conversation history. This standalone query will be used for a database search, so make sure it contains the key search terms.
-            Do NOT answer the question. Do NOT add any preamble. Just output the standalone, rephrased query and nothing else.
-            
-            Conversation History:
-            {chat_history_str}
-            
-            Latest User Query: {request.query}
-            
-            Standalone Query:
-            """
-            rephrased = rag.llm.invoke(rephrase_prompt).content.strip()
-            if rephrased.startswith('"') and rephrased.endswith('"'):
-                rephrased = rephrased[1:-1]
-            if rephrased:
-                print(f"Rephrased query: '{request.query}' -> '{rephrased}'")
-                standalone_query = rephrased
-        except Exception as e:
-            print(f"Error rephrasing query: {str(e)}")
+                Latest User Query: {request.query}
+                
+                Standalone Query:
+                """
+                rephrased = rag.llm.invoke(rephrase_prompt).content.strip()
+                if rephrased.startswith('"') and rephrased.endswith('"'):
+                    rephrased = rephrased[1:-1]
+                if rephrased:
+                    print(f"Rephrased query: '{request.query}' -> '{rephrased}'")
+                    standalone_query = rephrased
+            except Exception as e:
+                print(f"Error rephrasing query: {str(e)}")
 
-    # If original query requested paragraph form, ensure the standalone query carries this instruction
-    if is_para_original and not bool(re.search(r'\b(paras?|paragraphs?)\b', standalone_query.lower())):
-        standalone_query += " (Format the answer in paragraph form only)"
+        # If original query requested paragraph form, ensure the standalone query carries this instruction
+        if is_para_original and not bool(re.search(r'\b(paras?|paragraphs?)\b', standalone_query.lower())):
+            standalone_query += " (Format the answer in paragraph form only)"
 
-    response = rag.ask(
-        standalone_query,
-        mode=request.mode,
-        user_id=user_id,
-        mongodb=db,
-        notebook_id=resolved_id
-    )
-    
-    if isinstance(response, str):
-        # Fallback to string error message format
+        response = rag.ask(
+            standalone_query,
+            mode=request.mode,
+            user_id=user_id,
+            mongodb=db,
+            notebook_id=resolved_id
+        )
+        
+        if isinstance(response, str):
+            # Fallback to string error message format
+            return {
+                "answer": response,
+                "sources": [],
+                "query_time": 0.0,
+                "mode": request.mode
+            }
+            
+        return response
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {
-            "answer": response,
+            "answer": f"An error occurred on the server: {str(e)}",
             "sources": [],
             "query_time": 0.0,
             "mode": request.mode
         }
-        
-    return response
 
 # Analytics & Settings
 
