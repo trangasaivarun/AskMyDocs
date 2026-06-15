@@ -1,6 +1,6 @@
 import os
 import tempfile
-import PyPDF2
+# PyPDF2 is unused, PDF processing is handled by PyMuPDF (fitz)
 try:
     import streamlit as _original_st
     from streamlit.runtime import exists as _st_exists
