@@ -61,7 +61,7 @@ class SafeStreamlitMock:
         return lambda *args, **kwargs: None
 
 st = SafeStreamlitMock(_original_st)
-import torch
+# torch is imported lazily inside methods to save startup memory
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -78,16 +78,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_groq import ChatGroq
-from langchain_core.output_parsers import StrOutputParser
+class ModelCache:
+    _embeddings = None
+    _reranker = None
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS, Chroma
+    @classmethod
+    def get_embeddings(cls, model_name, device):
+        if cls._embeddings is None:
+            from langchain_huggingface import HuggingFaceEmbeddings
+            print(f"Loading HuggingFace embeddings: {model_name}...")
+            cls._embeddings = HuggingFaceEmbeddings(
+                model_name=model_name,
+                model_kwargs={"device": device}
+            )
+        return cls._embeddings
 
-from langchain_core.documents import Document
-from langchain_core.prompts import PromptTemplate
-from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+    @classmethod
+    def get_reranker(cls, model_name, device):
+        if cls._reranker is None:
+            from sentence_transformers import CrossEncoder
+            print(f"Loading CrossEncoder reranker: {model_name}...")
+            cls._reranker = CrossEncoder(model_name, device=device)
+        return cls._reranker
 
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -120,11 +132,16 @@ class EnhancedRAG:
         self.embedding_model_name = embedding_model_name
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.use_gpu = use_gpu and torch.cuda.is_available()
+        try:
+            import torch
+            self.use_gpu = use_gpu and torch.cuda.is_available()
+        except ImportError:
+            self.use_gpu = False
+            
         self.temp_dirs = []
-        
         self.device = "cuda" if self.use_gpu else "cpu"
         
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -132,15 +149,13 @@ class EnhancedRAG:
         )
         
         try:
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name=embedding_model_name,
-                model_kwargs={"device": self.device}
-            )
+            self.embeddings = ModelCache.get_embeddings(embedding_model_name, self.device)
         except Exception as e:
             print(f"Failed to load embeddings model: {str(e)}")
             self.embeddings = None
         
         try:
+            from langchain_groq import ChatGroq
             groq_api_key = os.environ.get("GROQ_API_KEY")
             if not groq_api_key:
                 print("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
@@ -150,6 +165,7 @@ class EnhancedRAG:
             self.llm = None
 
         try:
+            from langchain_groq import ChatGroq
             groq_api_key = os.environ.get("GROQ_API_KEY")
             self.vision_llm = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct", groq_api_key=groq_api_key, temperature=0.2)
         except Exception as e:
@@ -158,9 +174,7 @@ class EnhancedRAG:
         
         # Initialize CrossEncoder for Re-ranking
         try:
-            from sentence_transformers import CrossEncoder
-            # ms-marco-MiniLM-L-6-v2 is highly accurate, fast, and only 80MB.
-            self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device=self.device)
+            self.reranker = ModelCache.get_reranker("cross-encoder/ms-marco-MiniLM-L-6-v2", self.device)
             print("Loaded local Cross-Encoder re-ranker successfully.")
         except Exception as e:
             print(f"Failed to load Cross-Encoder reranker: {str(e)}")
@@ -226,6 +240,7 @@ class EnhancedRAG:
 
     def semantic_split_document(self, text, source, notebook_id, file_type):
         """Split a document semantically based on sentence embedding similarities."""
+        from langchain_core.documents import Document
         if not text.strip():
             return []
         
@@ -354,6 +369,7 @@ class EnhancedRAG:
         Returns:
             Boolean indicating success
         """
+        from langchain_core.documents import Document
         if self.embeddings is None:
             st.error("Embeddings model not initialized. Unable to process files.")
             return False
@@ -608,6 +624,8 @@ class EnhancedRAG:
         Returns:
             An enhanced answer with improved quality and formatting
         """
+        from langchain_core.prompts import PromptTemplate
+        from langchain_core.output_parsers import StrOutputParser
         import re
         is_para = bool(re.search(r'\b(paras?|paragraphs?)\b', query.lower()))
         
@@ -862,6 +880,7 @@ class EnhancedRAG:
 
     def process_web_content(self, query):
         """Process web search results and create a vector store"""
+        from langchain_community.vectorstores import Chroma
         search_results = self.web_search(query)
         
         self.sources = []
