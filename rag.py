@@ -1,6 +1,5 @@
 import os
 import tempfile
-import PyPDF2
 
 class SafeStreamlitMock:
     def __getattr__(self, name):
