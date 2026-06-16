@@ -186,6 +186,7 @@ export default function App() {
   const [page, setPage] = useState('chat'); // chat | notebooks | settings
   const [theme, setTheme] = useState('light');
   const [showAllChats, setShowAllChats] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Notebooks
   const [notebooks, setNotebooks] = useState([]);
@@ -651,6 +652,7 @@ export default function App() {
     setNotebookTab('documents');
     setPage('notebook_detail');
     loadDocuments(notebook.id);
+    setSidebarOpen(false);
   };
 
   // Documents Operations
@@ -800,6 +802,7 @@ export default function App() {
           setPage('notebook_detail');
         }
       }
+      setSidebarOpen(false);
     }
   };
 
@@ -810,6 +813,7 @@ export default function App() {
     setChatMode('deep_search');
     setPage('chat');
     updateActiveChatByScope(prev => ({ ...prev, [scope]: null }));
+    setSidebarOpen(false);
   };
 
   const deleteConversation = (id, e) => {
@@ -1262,7 +1266,7 @@ export default function App() {
   return (
     <div className="dashboard-layout">
       {/* Left Sidebar */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
 
         {/* Logo */}
         <div className="sidebar-logo">
@@ -1318,7 +1322,7 @@ export default function App() {
 
           <button
             className={`sidebar-item ${page === 'notebooks' ? 'active' : ''}`}
-            onClick={() => { setPage('notebooks'); loadNotebooks(); }}
+            onClick={() => { setPage('notebooks'); loadNotebooks(); setSidebarOpen(false); }}
           >
             <span className="sidebar-item-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -1330,7 +1334,7 @@ export default function App() {
 
           <button
             className={`sidebar-item ${page === 'settings' ? 'active' : ''}`}
-            onClick={() => { setPage('settings'); loadAnalytics(); }}
+            onClick={() => { setPage('settings'); loadAnalytics(); setSidebarOpen(false); }}
           >
             <span className="sidebar-item-icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -1450,6 +1454,11 @@ export default function App() {
             {/* Elegant Chat Header */}
             <div className="chat-header-bar">
               <div className="chat-header-left">
+                <button className="sidebar-toggle-mobile" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 20, height: 20 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                  </svg>
+                </button>
                 <span className="chat-header-icon">💬</span>
                 <div>
                   <h1 className="chat-header-title">Document Chat Sandbox</h1>
@@ -1555,7 +1564,7 @@ export default function App() {
                     <h4 style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)', margin: 0 }}>
                       🔗 Add Web Page URL
                     </h4>
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div className="url-upload-row">
                       <input 
                         type="url" 
                         placeholder="https://example.com/article" 
@@ -1808,9 +1817,16 @@ export default function App() {
         {page === 'notebooks' && (
           <div className="scrollable-page fade-in">
             <div className="page-header">
-              <div>
-                <h1 className="page-title"><span className="page-title-gradient">Notebook Collections</span></h1>
-                <p className="page-subtitle">Group documents into notebooks and run isolated AI search configurations</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button className="sidebar-toggle-mobile" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 20, height: 20 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                  </svg>
+                </button>
+                <div>
+                  <h1 className="page-title"><span className="page-title-gradient">Notebook Collections</span></h1>
+                  <p className="page-subtitle">Group documents into notebooks and run isolated AI search configurations</p>
+                </div>
               </div>
               <button onClick={() => setShowCreateModal(true)} className="btn btn-primary">
                 ➕ Create Notebook
@@ -1818,7 +1834,7 @@ export default function App() {
             </div>
 
             {/* Filtering options */}
-            <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: 28, marginBottom: 28, padding: '12px 20px' }}>
+            <div className="notebooks-filter-bar glass-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <label className="form-label" style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Sort Directory:</label>
                 <select className="form-input" style={{ width: 180 }} value={searchSort} onChange={(e) => setSearchSort(e.target.value)}>
@@ -1895,6 +1911,11 @@ export default function App() {
             {/* Header toolbar */}
             <div className="page-header" style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <button className="sidebar-toggle-mobile" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 20, height: 20 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                  </svg>
+                </button>
                 <button className="btn btn-secondary" style={{ padding: '8px 14px' }} onClick={() => setPage('notebooks')}>
                   ← Back
                 </button>
@@ -2039,7 +2060,7 @@ export default function App() {
                   <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)' }}>
                     🔗 Add Web Page URL
                   </h4>
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div className="url-upload-row">
                     <input 
                       type="url" 
                       placeholder="https://example.com/article" 
@@ -2355,14 +2376,21 @@ export default function App() {
         {page === 'settings' && (
           <div className="scrollable-page fade-in">
             <div className="page-header" style={{ marginBottom: 24 }}>
-              <div>
-                <h1 className="page-title"><span className="page-title-gradient">Account Settings</span></h1>
-                <p className="page-subtitle">Manage system preferences, account profile details, and update security credentials</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button className="sidebar-toggle-mobile" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 20, height: 20 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                  </svg>
+                </button>
+                <div>
+                  <h1 className="page-title"><span className="page-title-gradient">Account Settings</span></h1>
+                  <p className="page-subtitle">Manage system preferences, account profile details, and update security credentials</p>
+                </div>
               </div>
             </div>
 
             {/* Sub-panels inside layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+            <div className="settings-grid">
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 {/* User Profile Card */}
@@ -2608,6 +2636,11 @@ export default function App() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Sidebar Overlay for Mobile */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Global Alert Notification */}

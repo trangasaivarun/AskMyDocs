@@ -2793,3 +2793,309 @@ select.form-input {
   gap: 12px;
   box-shadow: var(--card-shadow);
 }
+
+/* ==========================================================================
+   Mobile & Responsive Adaptations (widths <= 768px)
+   ========================================================================== */
+
+/* Mobile Sidebar Toggle Hamburger Button */
+.sidebar-toggle-mobile {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  padding: 8px;
+  margin-right: 8px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.sidebar-toggle-mobile:hover {
+  background-color: var(--primary-glow);
+}
+
+.sidebar-toggle-mobile:active {
+  transform: scale(0.95);
+}
+
+/* Sidebar Backdrop Blur Overlay */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeInOverlay 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* slideInRight animation for mobile citations */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 768px) {
+  /* Only show hamburger on mobile */
+  .sidebar-toggle-mobile {
+    display: flex;
+  }
+
+  /* Left Sidebar collapses into slide-out drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Workspace fills the viewport completely */
+  .workspace {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Chat Header layout collapses nicely */
+  .chat-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .chat-header-left {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .chat-header-center {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .chat-header-right {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .rag-mode-picker {
+    width: 100%;
+  }
+
+  .rag-mode-btn {
+    min-width: 0; /* Let it shrink on phone screens */
+  }
+
+  .btn-toggle-indexer {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Scrollable Pages have less padding on mobile */
+  .scrollable-page {
+    padding: 16px;
+  }
+
+  /* Settings form displays in a single column */
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+
+  /* Notebook collection filter wraps to column */
+  .notebooks-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .notebooks-filter-bar > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .notebooks-filter-bar select {
+    flex-grow: 1;
+    max-width: none;
+  }
+
+  /* Horizontal category tab headers scroll horizontally */
+  .tabs-header {
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabs-header::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .tabs-header::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 2px;
+  }
+
+  .tab-button {
+    font-size: 0.92rem;
+    padding: 8px 2px;
+  }
+
+  /* Dropzone Uploader shrinks for smaller viewports */
+  .dropzone {
+    padding: 24px 16px;
+  }
+
+  .dropzone-icon {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+  }
+
+  .dropzone h3 {
+    font-size: 1.1rem;
+  }
+
+  /* Document lists wrap rows on mobile */
+  .document-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .document-info {
+    width: 100%;
+  }
+
+  .document-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .document-actions button {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Citations Drawer slides in as a mobile overlay sheet */
+  .sources-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1001;
+    width: 310px;
+    max-width: 85vw;
+    border-left: 1px solid var(--border-color);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.2);
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Document Modal stages file cards to single column */
+  .doc-modal-file-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Document Modal padding scaled down */
+  .doc-modal {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  /* modal-content padding scaled down */
+  .modal-content {
+    padding: 20px;
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Document Viewer scale downs */
+  .doc-viewer-header {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .doc-viewer-title-row {
+    width: 100%;
+  }
+
+  .doc-viewer-title {
+    font-size: 1.2rem;
+  }
+
+  .doc-viewer-content {
+    padding: 12px;
+  }
+
+  .doc-viewer-paper {
+    padding: 24px 16px;
+    min-height: auto;
+  }
+
+  .pdf-iframe {
+    height: calc(100vh - 150px);
+  }
+}
+
+/* ==========================================================================
+   Small Phone Sizing (widths <= 500px)
+   ========================================================================== */
+@media (max-width: 500px) {
+  /* Auth login/signup container scales down */
+  .auth-form-side {
+    padding: 16px;
+  }
+
+  .auth-card {
+    padding: 24px 18px;
+    border-radius: 20px;
+  }
+
+  .auth-title {
+    font-size: 1.65rem;
+  }
+
+  /* Staged URL inputs wrap vertically on tiny screens */
+  .url-upload-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .url-upload-row input {
+    width: 100%;
+  }
+
+  .url-upload-row button {
+    width: 100%;
+    height: 38px;
+  }
+}
