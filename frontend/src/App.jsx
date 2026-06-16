@@ -234,7 +234,12 @@ export default function App() {
     setConversations(prev => {
       const updated = typeof newConvsOrFn === 'function' ? newConvsOrFn(prev) : newConvsOrFn;
       if (user?.user_id) {
-        localStorage.setItem(`rag_conversations_${user.user_id}`, JSON.stringify(updated));
+        try {
+          console.log(`[AskMyDocs] Saving conversations for user ${user.user_id}:`, updated);
+          localStorage.setItem(`rag_conversations_${user.user_id}`, JSON.stringify(updated));
+        } catch (e) {
+          console.error("[AskMyDocs] Error saving conversations to localStorage:", e);
+        }
       }
       return updated;
     });
@@ -247,7 +252,12 @@ export default function App() {
     setActiveChatByScope(prev => {
       const updated = typeof newScopeOrFn === 'function' ? newScopeOrFn(prev) : newScopeOrFn;
       if (user?.user_id) {
-        localStorage.setItem(`rag_active_chat_by_scope_${user.user_id}`, JSON.stringify(updated));
+        try {
+          console.log(`[AskMyDocs] Saving active scope for user ${user.user_id}:`, updated);
+          localStorage.setItem(`rag_active_chat_by_scope_${user.user_id}`, JSON.stringify(updated));
+        } catch (e) {
+          console.error("[AskMyDocs] Error saving active scope to localStorage:", e);
+        }
       }
       return updated;
     });
@@ -295,24 +305,31 @@ export default function App() {
   // Load user-specific chat history when user changes
   useEffect(() => {
     if (user?.user_id) {
-      const savedConvs = localStorage.getItem(`rag_conversations_${user.user_id}`);
-      const savedScope = localStorage.getItem(`rag_active_chat_by_scope_${user.user_id}`);
-      
-      const loadedConvs = savedConvs ? JSON.parse(savedConvs) : [];
-      const loadedScope = savedScope ? JSON.parse(savedScope) : {};
-      
-      setConversations(loadedConvs);
-      setActiveChatByScope(loadedScope);
-      
-      const activeId = loadedScope['global'] || null;
-      setActiveConversationId(activeId);
-      if (activeId) {
-        const conv = loadedConvs.find(c => c.id === activeId);
-        setChatHistory(conv ? conv.messages : []);
-      } else {
-        setChatHistory([]);
+      try {
+        const savedConvs = localStorage.getItem(`rag_conversations_${user.user_id}`);
+        const savedScope = localStorage.getItem(`rag_active_chat_by_scope_${user.user_id}`);
+        
+        console.log(`[AskMyDocs] Loading history for user ${user.user_id}:`, { savedConvs, savedScope });
+        
+        const loadedConvs = savedConvs ? JSON.parse(savedConvs) : [];
+        const loadedScope = savedScope ? JSON.parse(savedScope) : {};
+        
+        setConversations(loadedConvs);
+        setActiveChatByScope(loadedScope);
+        
+        const activeId = loadedScope['global'] || null;
+        setActiveConversationId(activeId);
+        if (activeId) {
+          const conv = loadedConvs.find(c => c.id === activeId);
+          setChatHistory(conv ? conv.messages : []);
+        } else {
+          setChatHistory([]);
+        }
+        setIsChatLoaded(true);
+      } catch (e) {
+        console.error("[AskMyDocs] Error loading chat history from localStorage:", e);
+        setIsChatLoaded(true);
       }
-      setIsChatLoaded(true);
     } else {
       setIsChatLoaded(false);
       setConversations([]);
