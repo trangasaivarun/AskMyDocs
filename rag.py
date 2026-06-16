@@ -1,28 +1,15 @@
 import os
 import tempfile
-# PyPDF2 is unused, PDF processing is handled by PyMuPDF (fitz)
-try:
-    import streamlit as _original_st
-    from streamlit.runtime import exists as _st_exists
-    has_streamlit = True
-except ImportError:
-    _original_st = None
-    has_streamlit = False
-    def _st_exists():
-        return False
+import PyPDF2
 
 class SafeStreamlitMock:
-    def __init__(self, original_st):
-        self._st = original_st
     def __getattr__(self, name):
-        if _st_exists() and self._st:
-            return getattr(self._st, name)
         if name in ['info', 'success', 'warning', 'error', 'write', 'markdown', 'title', 'header', 'subheader', 'caption']:
             return lambda msg, *args, **kwargs: print(f"[{name.upper()}] {msg}")
         elif name == 'progress':
             return lambda val, *args, **kwargs: None
         elif name == 'empty':
-            return lambda: SafeStreamlitMock(self._st)
+            return lambda: self
         elif name in ['chat_message', 'container', 'expander']:
             class SafeContext:
                 def __enter__(self): return self
@@ -57,15 +44,15 @@ class SafeStreamlitMock:
                 def __setattr__(self, item, value): self[item] = value
             return SessionStateMock()
         elif name == 'sidebar':
-            return SafeStreamlitMock(getattr(self._st, 'sidebar') if (self._st and hasattr(self._st, 'sidebar')) else None)
+            return self
         return lambda *args, **kwargs: None
 
-st = SafeStreamlitMock(_original_st)
-# torch is imported lazily inside methods to save startup memory
+st = SafeStreamlitMock()
+
+import torch
 import requests
 from bs4 import BeautifulSoup
 import time
-import pandas as pd
 import warnings
 import threading
 import psutil
@@ -78,28 +65,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class ModelCache:
-    _embeddings = None
-    _reranker = None
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_groq import ChatGroq
+from langchain_core.output_parsers import StrOutputParser
 
-    @classmethod
-    def get_embeddings(cls, model_name, device):
-        if cls._embeddings is None:
-            from langchain_huggingface import HuggingFaceEmbeddings
-            print(f"Loading HuggingFace embeddings: {model_name}...")
-            cls._embeddings = HuggingFaceEmbeddings(
-                model_name=model_name,
-                model_kwargs={"device": device}
-            )
-        return cls._embeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS, Chroma
 
-    @classmethod
-    def get_reranker(cls, model_name, device):
-        if cls._reranker is None:
-            from sentence_transformers import CrossEncoder
-            print(f"Loading CrossEncoder reranker: {model_name}...")
-            cls._reranker = CrossEncoder(model_name, device=device)
-        return cls._reranker
+from langchain_core.documents import Document
+from langchain_core.prompts import PromptTemplate
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -132,16 +107,11 @@ class EnhancedRAG:
         self.embedding_model_name = embedding_model_name
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        try:
-            import torch
-            self.use_gpu = use_gpu and torch.cuda.is_available()
-        except ImportError:
-            self.use_gpu = False
-            
+        self.use_gpu = use_gpu and torch.cuda.is_available()
         self.temp_dirs = []
+        
         self.device = "cuda" if self.use_gpu else "cpu"
         
-        from langchain_text_splitters import RecursiveCharacterTextSplitter
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -149,13 +119,15 @@ class EnhancedRAG:
         )
         
         try:
-            self.embeddings = ModelCache.get_embeddings(embedding_model_name, self.device)
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=embedding_model_name,
+                model_kwargs={"device": self.device}
+            )
         except Exception as e:
             print(f"Failed to load embeddings model: {str(e)}")
             self.embeddings = None
         
         try:
-            from langchain_groq import ChatGroq
             groq_api_key = os.environ.get("GROQ_API_KEY")
             if not groq_api_key:
                 print("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
@@ -165,15 +137,21 @@ class EnhancedRAG:
             self.llm = None
 
         try:
-            from langchain_groq import ChatGroq
             groq_api_key = os.environ.get("GROQ_API_KEY")
             self.vision_llm = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct", groq_api_key=groq_api_key, temperature=0.2)
         except Exception as e:
             print(f"Failed to load Groq Vision LLM: {str(e)}")
             self.vision_llm = None
         
-        # Reranker is initialized lazily when needed
-        self.reranker = None
+        # Initialize CrossEncoder for Re-ranking
+        try:
+            from sentence_transformers import CrossEncoder
+            # ms-marco-MiniLM-L-6-v2 is highly accurate, fast, and only 80MB.
+            self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device=self.device)
+            print("Loaded local Cross-Encoder re-ranker successfully.")
+        except Exception as e:
+            print(f"Failed to load Cross-Encoder reranker: {str(e)}")
+            self.reranker = None
         
         self.doc_vector_store = None
         self.web_vector_store = None
@@ -235,7 +213,6 @@ class EnhancedRAG:
 
     def semantic_split_document(self, text, source, notebook_id, file_type):
         """Split a document semantically based on sentence embedding similarities."""
-        from langchain_core.documents import Document
         if not text.strip():
             return []
         
@@ -333,12 +310,6 @@ class EnhancedRAG:
         if not documents:
             return []
         if not hasattr(self, 'reranker') or self.reranker is None:
-            try:
-                self.reranker = ModelCache.get_reranker("cross-encoder/ms-marco-MiniLM-L-6-v2", self.device)
-            except Exception as e:
-                print(f"Failed to load Cross-Encoder reranker on demand: {str(e)}")
-                self.reranker = None
-        if self.reranker is None:
             return documents[:top_k]
         
         try:
@@ -370,7 +341,6 @@ class EnhancedRAG:
         Returns:
             Boolean indicating success
         """
-        from langchain_core.documents import Document
         if self.embeddings is None:
             st.error("Embeddings model not initialized. Unable to process files.")
             return False
@@ -560,8 +530,6 @@ class EnhancedRAG:
                 if not domains and len(self.documents) > 0:
                     domains = self.detect_domains(self.documents)
 
-                import gc
-                gc.collect()
                 return True
 
             except Exception as e:
@@ -570,8 +538,6 @@ class EnhancedRAG:
                 st.error(error_msg)
                 if is_nested:
                     status_msg.error(error_msg)
-                import gc
-                gc.collect()
                 return False
         else:
             empty_msg = "No content extracted from files"
@@ -579,8 +545,6 @@ class EnhancedRAG:
                 status_msg.error(empty_msg)
             else:
                 status_msg.error(empty_msg)
-            import gc
-            gc.collect()
             return False
          
     def detect_domains(self, documents, max_domains=3):
@@ -631,8 +595,6 @@ class EnhancedRAG:
         Returns:
             An enhanced answer with improved quality and formatting
         """
-        from langchain_core.prompts import PromptTemplate
-        from langchain_core.output_parsers import StrOutputParser
         import re
         is_para = bool(re.search(r'\b(paras?|paragraphs?)\b', query.lower()))
         
@@ -887,7 +849,6 @@ class EnhancedRAG:
 
     def process_web_content(self, query):
         """Process web search results and create a vector store"""
-        from langchain_community.vectorstores import Chroma
         search_results = self.web_search(query)
         
         self.sources = []

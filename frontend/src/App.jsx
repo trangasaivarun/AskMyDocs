@@ -1,14 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import robotImg from './assets/robot.png';
 
-let base = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-if (base.endsWith('/')) {
-  base = base.slice(0, -1);
-}
-if (!base.endsWith('/api')) {
-  base = base + '/api';
-}
-const API_BASE = base;
+const API_BASE = 'http://localhost:8000/api';
 
 // Browser speech recognition support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

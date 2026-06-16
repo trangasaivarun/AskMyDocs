@@ -1,41 +1,26 @@
-# ─── Python ───────────────────────────────────────────────────────────────────
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python caching and compiled files
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
-*.pyc
-*.egg-info/
-dist/
-build/
-*.egg
+.pytest_cache/
 
-# ─── Virtual Environment ──────────────────────────────────────────────────────
-venv/
-env/
-.venv/
-.env.local
-
-# ─── Environment Variables (secrets) ─────────────────────────────────────────
+# Environment secrets
 .env
+.env.local
+.env.production
+.env.development
 
-# ─── Scratch / temp files ─────────────────────────────────────────────────────
-scratch/
-*.log
-*.tmp
-
-# ─── Frontend ─────────────────────────────────────────────────────────────────
+# Node/Frontend dependencies and build artifacts
+node_modules/
 frontend/node_modules/
 frontend/dist/
-frontend/.env
-frontend/.env.local
 
-# ─── OS files ─────────────────────────────────────────────────────────────────
+# OS specific files
 .DS_Store
 Thumbs.db
-desktop.ini
-
-# ─── IDE / Editor ─────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.suo
-*.user
