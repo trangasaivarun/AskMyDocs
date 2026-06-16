@@ -1,7 +1,5 @@
 supabase
 bcrypt
-torch --index-url https://download.pytorch.org/whl/cpu
-sentence-transformers
 langchain
 langchain-huggingface
 langchain-groq

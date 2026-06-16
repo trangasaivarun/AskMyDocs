@@ -48,7 +48,12 @@ class SafeStreamlitMock:
 
 st = SafeStreamlitMock()
 
-import torch
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -106,7 +111,7 @@ class EnhancedRAG:
         self.embedding_model_name = embedding_model_name
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.use_gpu = use_gpu and torch.cuda.is_available()
+        self.use_gpu = use_gpu and TORCH_AVAILABLE and torch.cuda.is_available()
         self.temp_dirs = []
         
         self.device = "cuda" if self.use_gpu else "cpu"
@@ -118,10 +123,22 @@ class EnhancedRAG:
         )
         
         try:
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name=embedding_model_name,
-                model_kwargs={"device": self.device}
-            )
+            hf_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN") or os.environ.get("HF_TOKEN")
+            if hf_token:
+                from langchain_huggingface import HuggingFaceEndpointEmbeddings
+                print(f"Initializing hosted HuggingFaceEndpointEmbeddings via API: {embedding_model_name}")
+                self.embeddings = HuggingFaceEndpointEmbeddings(
+                    model=embedding_model_name,
+                    task="feature-extraction",
+                    huggingfacehub_api_token=hf_token
+                )
+            else:
+                from langchain_huggingface import HuggingFaceEmbeddings
+                print(f"No Hugging Face token found. Initializing local HuggingFaceEmbeddings: {embedding_model_name}")
+                self.embeddings = HuggingFaceEmbeddings(
+                    model_name=embedding_model_name,
+                    model_kwargs={"device": self.device}
+                )
         except Exception as e:
             print(f"Failed to load embeddings model: {str(e)}")
             self.embeddings = None
