@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import robotImg from './assets/robot.png';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const getApiBase = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  url = url.trim().replace(/\/+$/, '');
+  if (!url.endsWith('/api')) {
+    url += '/api';
+  }
+  return url;
+};
+
+const API_BASE = getApiBase();
 
 // Browser speech recognition support
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
