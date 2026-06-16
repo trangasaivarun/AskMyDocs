@@ -131,7 +131,8 @@ class EnhancedRAG:
             groq_api_key = os.environ.get("GROQ_API_KEY")
             if not groq_api_key:
                 print("GROQ_API_KEY environment variable is not set. Please add it to your .env file.")
-            self.llm = ChatGroq(model=llm_model_name, groq_api_key=groq_api_key, temperature=0.2)
+            model_to_use = os.environ.get("GROQ_LLM_MODEL", llm_model_name)
+            self.llm = ChatGroq(model=model_to_use, groq_api_key=groq_api_key, temperature=0.2)
         except Exception as e:
             print(f"Failed to load Groq LLM: {str(e)}")
             self.llm = None

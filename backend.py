@@ -62,7 +62,7 @@ class ChatRequest(BaseModel):
     history: Optional[List[dict]] = []
     mode: str = "direct_retrieval"  # direct_retrieval, deep_search, hybrid
     notebook_id: Optional[str] = None
-    llm_model: Optional[str] = "llama-3.3-70b-versatile"
+    llm_model: Optional[str] = os.environ.get("GROQ_LLM_MODEL", "llama-3.3-70b-versatile")
     embedding_model: Optional[str] = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: Optional[int] = 1000
     chunk_overlap: Optional[int] = 200
@@ -71,7 +71,7 @@ class ChatRequest(BaseModel):
 class UrlUploadRequest(BaseModel):
     url: str
     use_rag: Optional[bool] = True
-    llm_model: Optional[str] = "llama-3.3-70b-versatile"
+    llm_model: Optional[str] = os.environ.get("GROQ_LLM_MODEL", "llama-3.3-70b-versatile")
     embedding_model: Optional[str] = "sentence-transformers/all-MiniLM-L6-v2"
     chunk_size: Optional[int] = 1000
     chunk_overlap: Optional[int] = 200
@@ -194,7 +194,7 @@ def rebuild_notebook_index_task(notebook_id: str, user_id: str):
         print(f"Rebuilding RAG index for notebook {notebook_id} with {len(adapted_files)} files...")
         # 3. Create a clean RAG instance (without loading existing index)
         rag = EnhancedRAG(
-            llm_model_name="llama-3.3-70b-versatile",
+            llm_model_name=os.environ.get("GROQ_LLM_MODEL", "llama-3.3-70b-versatile"),
             embedding_model_name="sentence-transformers/all-MiniLM-L6-v2",
             use_gpu=True
         )
@@ -419,7 +419,7 @@ async def upload_documents(
     files: List[UploadFile] = File(...),
     custom_name: Optional[str] = Form(None),
     use_rag: bool = Form(True),
-    llm_model: str = Form("llama-3.3-70b-versatile"),
+    llm_model: str = Form(os.environ.get("GROQ_LLM_MODEL", "llama-3.3-70b-versatile")),
     embedding_model: str = Form("sentence-transformers/all-MiniLM-L6-v2"),
     chunk_size: int = Form(1000),
     chunk_overlap: int = Form(200),
