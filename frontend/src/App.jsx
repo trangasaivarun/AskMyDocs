@@ -1007,6 +1007,10 @@ export default function App() {
           {authPage === 'login' ? (
             <form onSubmit={handleLogin} className="auth-card fade-in">
               <div className="auth-header">
+                <div className="auth-mobile-logo">
+                  <img src={robotImg} alt="AskMyDocs Mascot" />
+                  <h2>AskMyDocs</h2>
+                </div>
                 <h2 className="auth-title">Welcome Back 👋</h2>
                 <p className="auth-subtitle">Login to retrieve your notebooks and indexes</p>
               </div>
@@ -1096,6 +1100,10 @@ export default function App() {
           ) : (
             <form onSubmit={handleSignup} className="auth-card fade-in">
               <div className="auth-header">
+                <div className="auth-mobile-logo">
+                  <img src={robotImg} alt="AskMyDocs Mascot" />
+                  <h2>AskMyDocs</h2>
+                </div>
                 <h2 className="auth-title">Welcome 👋</h2>
                 <p className="auth-subtitle">Set up a credentials token to access storage</p>
               </div>

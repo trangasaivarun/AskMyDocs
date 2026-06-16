@@ -2859,6 +2859,7 @@ select.form-input {
     bottom: 0;
     z-index: 1000;
     width: 280px;
+    animation: none;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 0 24px rgba(0, 0, 0, 0.18);
@@ -3097,5 +3098,36 @@ select.form-input {
   .url-upload-row button {
     width: 100%;
     height: 38px;
+  }
+}
+
+/* Mobile-only logo header for login/signup pages */
+.auth-mobile-logo {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .auth-mobile-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .auth-mobile-logo img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+  }
+
+  .auth-mobile-logo h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
   }
 }
