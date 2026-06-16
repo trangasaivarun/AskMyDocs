@@ -230,8 +230,28 @@ export default function App() {
   const [chatQuery, setChatQuery] = useState('');
   const [conversations, setConversations] = useState([]);
 
+  const updateConversations = (newConvsOrFn) => {
+    setConversations(prev => {
+      const updated = typeof newConvsOrFn === 'function' ? newConvsOrFn(prev) : newConvsOrFn;
+      if (user?.user_id) {
+        localStorage.setItem(`rag_conversations_${user.user_id}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
   // Track active conversation ID per scope (notebook ID or 'global')
   const [activeChatByScope, setActiveChatByScope] = useState({});
+
+  const updateActiveChatByScope = (newScopeOrFn) => {
+    setActiveChatByScope(prev => {
+      const updated = typeof newScopeOrFn === 'function' ? newScopeOrFn(prev) : newScopeOrFn;
+      if (user?.user_id) {
+        localStorage.setItem(`rag_active_chat_by_scope_${user.user_id}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -302,19 +322,6 @@ export default function App() {
     }
   }, [user]);
 
-  // Sync conversations to localStorage
-  useEffect(() => {
-    if (user?.user_id && isChatLoaded) {
-      localStorage.setItem(`rag_conversations_${user.user_id}`, JSON.stringify(conversations));
-    }
-  }, [conversations, user, isChatLoaded]);
-
-  // Sync activeChatByScope to localStorage
-  useEffect(() => {
-    if (user?.user_id && isChatLoaded) {
-      localStorage.setItem(`rag_active_chat_by_scope_${user.user_id}`, JSON.stringify(activeChatByScope));
-    }
-  }, [activeChatByScope, user, isChatLoaded]);
 
   // Sync scroll on chat updates
   useEffect(() => {
@@ -765,7 +772,7 @@ export default function App() {
       setActiveConversationId(id);
       setChatHistory(conv.messages);
       setChatMode(conv.mode || 'deep_search');
-      setActiveChatByScope(prev => ({ ...prev, [scope]: id }));
+      updateActiveChatByScope(prev => ({ ...prev, [scope]: id }));
       if (scope === 'global') {
         setPage('chat');
       } else {
@@ -785,7 +792,7 @@ export default function App() {
     setChatHistory([]);
     setChatMode('deep_search');
     setPage('chat');
-    setActiveChatByScope(prev => ({ ...prev, [scope]: null }));
+    updateActiveChatByScope(prev => ({ ...prev, [scope]: null }));
   };
 
   const deleteConversation = (id, e) => {
@@ -795,14 +802,14 @@ export default function App() {
     const conv = conversations.find(c => c.id === id);
     const scope = conv?.notebookId || 'global';
     
-    setConversations(prev => prev.filter(c => c.id !== id));
+    updateConversations(prev => prev.filter(c => c.id !== id));
     
     if (activeConversationId === id) {
       setActiveConversationId(null);
       setChatHistory([]);
-      setActiveChatByScope(prev => ({ ...prev, [scope]: null }));
+      updateActiveChatByScope(prev => ({ ...prev, [scope]: null }));
     } else if (activeChatByScope[scope] === id) {
-      setActiveChatByScope(prev => ({ ...prev, [scope]: null }));
+      updateActiveChatByScope(prev => ({ ...prev, [scope]: null }));
     }
   };
 
@@ -816,8 +823,7 @@ export default function App() {
     setChatLoading(true);
 
     const userMessage = { role: 'user', content: query };
-    const updatedHistory = [...chatHistory, userMessage];
-    setChatHistory(updatedHistory);
+    setChatHistory(prev => [...prev, userMessage]);
 
     const activeNotebookId = page === 'notebook_detail' ? currentNotebook.id : 'global';
     let convId = activeConversationId;
@@ -831,11 +837,11 @@ export default function App() {
         notebookId: activeNotebookId,
         created_at: new Date().toISOString()
       };
-      setConversations(prev => [newConv, ...prev]);
+      updateConversations(prev => [newConv, ...prev]);
       setActiveConversationId(convId);
-      setActiveChatByScope(prev => ({ ...prev, [activeNotebookId]: convId }));
+      updateActiveChatByScope(prev => ({ ...prev, [activeNotebookId]: convId }));
     } else {
-      setConversations(prev => prev.map(c => {
+      updateConversations(prev => prev.map(c => {
         if (c.id === convId) {
           return { ...c, messages: [...c.messages, userMessage] };
         }
@@ -857,7 +863,7 @@ export default function App() {
       // Append bot response
       const botMessage = { role: 'assistant', content: response };
       setChatHistory(prev => [...prev, botMessage]);
-      setConversations(prev => prev.map(c => {
+      updateConversations(prev => prev.map(c => {
         if (c.id === convId) {
           return { ...c, messages: [...c.messages, botMessage] };
         }
@@ -866,7 +872,7 @@ export default function App() {
     } catch (err) {
       const errorMessage = { role: 'assistant', content: `Error: ${err.message}` };
       setChatHistory(prev => [...prev, errorMessage]);
-      setConversations(prev => prev.map(c => {
+      updateConversations(prev => prev.map(c => {
         if (c.id === convId) {
           return { ...c, messages: [...c.messages, errorMessage] };
         }
@@ -2118,7 +2124,7 @@ export default function App() {
                       onClick={() => {
                         setActiveConversationId(null);
                         setChatHistory([]);
-                        setActiveChatByScope(prev => ({ ...prev, [currentNotebook.id]: null }));
+                        updateActiveChatByScope(prev => ({ ...prev, [currentNotebook.id]: null }));
                       }}
                     >
                       <span>➕</span> New Sandbox Chat
